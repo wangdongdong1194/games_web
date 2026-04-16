@@ -1,0 +1,24 @@
+/* 默认桌面端较大格子 */
+:root {
+  --bgColor: #ffffff;
+  --maxWidth: 1200px;
+}
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bgColor);
+  max-width: var(--maxWidth);
+  margin: 0px auto;
+}
