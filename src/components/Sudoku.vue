@@ -1,6 +1,5 @@
 <template>
     <div class="sudoku">
-        <!-- 棋盘 -->
         <div class="boardItems">
             <div class="boardItem" v-for="(item, index) in sudokuItems" :class="[
                 getBlockClass(index),
@@ -9,7 +8,6 @@
                 {{ item.value }}
             </div>
         </div>
-        <!-- 数字输入：点击棋盘上的格子选中，然后按键盘上的数字键（1-9）输入数字。 -->
         <div class="numItems">
             <div class="numItem" v-for="item in numItems" :key="item.value"
                 @click="item.value === 'C' ? handleNumItemClickEvent(item) : (candidates.length && candidates.includes(item.value) ? handleNumItemClickEvent(item) : null)"
@@ -17,51 +15,40 @@
                 <span class="numItemValue"
                     :style="item.value === 'C' ? '' : (candidates.length && candidates.includes(item.value) ? 'color:#1976d2;font-weight:bold;' : '')">
                     {{ item.value }}
-                    <template
-                        v-if="item.value !== 'C' && candidates.length && candidates.includes(item.value)"></template>
                 </span>
                 <span class="numItemRemaining" v-if="item.remaining > 0">{{ item.remaining }}</span>
             </div>
         </div>
+        <div class="controls">
+            <div class="control-item" @click="changeGames">换题</div>
+            <div class="control-item" @click="restartGame">重玩</div>
+        </div>
     </div>
 </template>
 <script lang="ts" setup>
-    import { ref } from 'vue'
+    import { onMounted, ref } from 'vue';
     import type { ISudokuInput, TSudokuBoard } from '../types/type';
     import { getOneSudoku } from '../api/sudokuApi';
 
-    // 初始化数独棋盘数据，默认值为1，所有格子都可编辑且未选中
     const sudokuItems = ref<TSudokuBoard>([]);
-    // 从接口获取数独数据，填充到棋盘中，并设置有值的格子为不可编辑
-    const sudokuData = getOneSudoku();
-    sudokuData.forEach(cell => {
-        sudokuItems.value.push({
-            value: cell,
-            readonly: cell !== '', // 有值的格子不可编辑
-            selected: false,
-            marked: false,
-        });
+
+    // 初始化数独数据
+    onMounted(async () => {
+        await initSoduku();
+        updateRemaining();
     });
 
-    // 获取小九宫格索引（0-8）
     function getBlockIndex(index: number): number {
         const row = Math.floor(index / 9);
         const col = index % 9;
         return Math.floor(row / 3) * 3 + Math.floor(col / 3);
     }
 
-    // 返回对应的 block class
     function getBlockClass(index: number): string {
-        const block = getBlockIndex(index) + 1; // 1-9
-        // 1,3,5,7,9 一种色，2,4,6,8 一种色
-        if ([1, 3, 5, 7, 9].includes(block)) {
-            return 'block-odd';
-        } else {
-            return 'block-even';
-        }
+        const block = getBlockIndex(index) + 1;
+        return [1, 3, 5, 7, 9].includes(block) ? 'block-odd' : 'block-even';
     }
 
-    // 输入数字
     const numItems = ref<ISudokuInput[]>([
         { value: '1', remaining: 9 },
         { value: '2', remaining: 9 },
@@ -75,36 +62,32 @@
         { value: 'C', remaining: 0 }
     ]);
 
-    // 当前选中格子的候选数字
     const candidates = ref<string[]>([]);
     const selectedIndex = ref<number | null>(null);
 
-    // 计算候选数字（排除自身填写的数字）
     function calcCandidates(index: number): string[] {
         const row = Math.floor(index / 9);
         const col = index % 9;
         const used = new Set<string>();
-        // 行
         for (let i = 0; i < 9; i++) {
-            if (row * 9 + i === index) continue;
-            const v = sudokuItems.value[row * 9 + i].value;
-            if (v) used.add(v);
+            if (row * 9 + i !== index) {
+                const v = sudokuItems.value[row * 9 + i].value;
+                if (v) used.add(v);
+            }
+            if (i * 9 + col !== index) {
+                const v = sudokuItems.value[i * 9 + col].value;
+                if (v) used.add(v);
+            }
         }
-        // 列
-        for (let i = 0; i < 9; i++) {
-            if (i * 9 + col === index) continue;
-            const v = sudokuItems.value[i * 9 + col].value;
-            if (v) used.add(v);
-        }
-        // 宫
         const blockRow = Math.floor(row / 3) * 3;
         const blockCol = Math.floor(col / 3) * 3;
         for (let r = 0; r < 3; r++) {
             for (let c = 0; c < 3; c++) {
                 const idx = (blockRow + r) * 9 + (blockCol + c);
-                if (idx === index) continue;
-                const v = sudokuItems.value[idx].value;
-                if (v) used.add(v);
+                if (idx !== index) {
+                    const v = sudokuItems.value[idx].value;
+                    if (v) used.add(v);
+                }
             }
         }
         const result: string[] = [];
@@ -116,9 +99,7 @@
         return result;
     }
 
-    // 统计剩余数量
     function updateRemaining() {
-        // 统计每个数字已用数量
         const used: Record<string, number> = {
             '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0
         };
@@ -132,28 +113,19 @@
                 item.remaining = 9 - used[item.value];
             }
         });
+        saveToLocalStorage();
     }
 
-    // 给每个元素添加点击选中事件
     const selectItemEvent = (index: number) => {
-        // 先清除所有标记
         sudokuItems.value.forEach(item => {
             item.selected = false;
             item.marked = false;
         });
-        // 选中格子
         sudokuItems.value[index].selected = true;
         selectedIndex.value = index;
-
-        // 计算横、竖、宫
-        const row = Math.floor(index / 9);
-        const col = index % 9;
-        const block = getBlockIndex(index);
-
-        // 如果当前格子有值，则高亮所有与当前值相同的节点
         const curValue = sudokuItems.value[index].value;
         if (curValue) {
-            sudokuItems.value.forEach((item, i) => {
+            sudokuItems.value.forEach(item => {
                 if (item.value === curValue && !item.selected) {
                     item.marked = true;
                 }
@@ -161,8 +133,9 @@
             candidates.value = [];
             return;
         }
-
-        // 否则，正常高亮横竖宫
+        const row = Math.floor(index / 9);
+        const col = index % 9;
+        const block = getBlockIndex(index);
         sudokuItems.value.forEach((item, i) => {
             const r = Math.floor(i / 9);
             const c = i % 9;
@@ -171,35 +144,33 @@
                 item.marked = true;
             }
         });
-
-        // 计算候选数字（只对非readonly节点）
         if (!sudokuItems.value[index].readonly) {
             candidates.value = calcCandidates(index);
         } else {
             candidates.value = [];
         }
+        // 不在这里保存，避免重复
     };
 
-    // 给每个选中节点添加键盘输入数字事件
     window.addEventListener('keyup', (event) => {
         const selectedItem = sudokuItems.value.find(item => item.selected);
         const keyInt = Number(event.key);
         if (selectedItem && !selectedItem.readonly && keyInt >= 1 && keyInt <= 9) {
-            // 判断剩余次数
             const numItem = numItems.value.find(n => n.value === event.key);
-            if (numItem && numItem.remaining <= 0) {
-                return;
-            }
-            const currentValue = selectedItem.value; // 记录当前值
-            selectedItem.value = event.key === currentValue ? '' : event.key; // 如果输入的数字和当前值相同，则清空，否则更新为新值
+            if (numItem && numItem.remaining <= 0) return;
+            const currentValue = selectedItem.value;
+            selectedItem.value = event.key === currentValue ? '' : event.key;
             updateRemaining();
-            console.log(`Updated selected item value: ${selectedItem.value}`);
+            if (selectedIndex.value !== null) selectItemEvent(selectedIndex.value);
+            saveToLocalStorage();
         } else if (selectedItem && !selectedItem.readonly && (event.key === 'Backspace' || event.key === 'Delete')) {
             selectedItem.value = '';
             updateRemaining();
-            console.log(`Cleared selected item value`);
-        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-            // 处理方向键移动选中格子
+            if (selectedIndex.value !== null) selectItemEvent(selectedIndex.value);
+            saveToLocalStorage();
+        } else if ([
+            'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+        ].includes(event.key)) {
             const currentIndex = sudokuItems.value.findIndex(item => item.selected);
             let newIndex = currentIndex;
             switch (event.key) {
@@ -220,37 +191,77 @@
         }
     });
 
-    // 给每个输入数字节点添加点击事件
     const handleNumItemClickEvent = (item: ISudokuInput) => {
         const selectedItem = sudokuItems.value.find(item => item.selected);
         if (selectedItem && !selectedItem.readonly) {
             if (item.value === 'C') {
                 selectedItem.value = '';
                 updateRemaining();
-                if (selectedIndex.value !== null) {
-                    selectItemEvent(selectedIndex.value);
-                }
-                console.log(`Cleared selected item value`);
+                if (selectedIndex.value !== null) selectItemEvent(selectedIndex.value);
+                saveToLocalStorage();
             } else if (candidates.value.length > 0) {
-                // 判断剩余次数
-                if (item.remaining <= 0) {
-                    return;
-                }
-                if (!candidates.value.includes(item.value)) {
-                    return;
-                }
+                if (item.remaining <= 0) return;
+                if (!candidates.value.includes(item.value)) return;
                 selectedItem.value = item.value;
                 updateRemaining();
-                if (selectedIndex.value !== null) {
-                    selectItemEvent(selectedIndex.value);
-                }
-                console.log(`Updated selected item value: ${selectedItem.value}`);
+                if (selectedIndex.value !== null) selectItemEvent(selectedIndex.value);
+                saveToLocalStorage();
             }
         }
     };
 
-    // 初始化时同步一次
-    updateRemaining();
+    function saveToLocalStorage() {
+        // debugger;
+        console.log('执行保存');
+        const puzzle = JSON.stringify(sudokuItems.value.map(cell => cell.value));
+        console.log('保存题目', puzzle);
+        localStorage.setItem('sudoku_solution', puzzle);
+    }
+    async function initSoduku() {
+        sudokuItems.value = [];
+        // 设置题干
+        let puzzle = JSON.parse(localStorage.getItem('sudoku_puzzle') || '[]') as string[];
+        let isNewPuzzle = false;
+        if (puzzle.length !== 81) {
+            localStorage.removeItem('sudoku_puzzle');
+            localStorage.removeItem('sudoku_solution'); // 题目变了才清除答案
+            puzzle = await getOneSudoku();
+            localStorage.setItem('sudoku_puzzle', JSON.stringify(puzzle));
+            isNewPuzzle = true;
+        }
+        if (!puzzle || puzzle.length !== 81) {
+            return;
+        }
+        puzzle.forEach(cell => {
+            sudokuItems.value.push({
+                value: cell,
+                readonly: cell !== '',
+                selected: false,
+                marked: false,
+            });
+        });
+
+        // 只有题目没变时才恢复答案
+        const solution = JSON.parse(localStorage.getItem('sudoku_solution') || '[]') as string[];
+        if (!isNewPuzzle && solution && solution.length === 81) {
+            for (let i = 0; i < 81; i++) {
+                if (!sudokuItems.value[i].readonly && solution[i]) {
+                    sudokuItems.value[i].value = solution[i];
+                }
+            }
+        }
+    }
+    // 重置游戏，清除本地存储的答案
+    async function restartGame() {
+        localStorage.removeItem('sudoku_solution');
+        await initSoduku();
+    }
+    // 换题，清除本地存储的题目和答案
+    async function changeGames() {
+        localStorage.removeItem('sudoku_puzzle');
+        localStorage.removeItem('sudoku_solution');
+        await initSoduku();
+    }
 </script>
 <style scoped>
     .sudoku {
@@ -270,12 +281,10 @@
 
     .marked {
         background: #abe6ee !important;
-        /* 横竖宫高亮色，淡黄 */
     }
 
     .selected {
         background: #95afe8 !important;
-        /* 选中格子高亮，蓝色更深 */
     }
 
     .boardItems {
@@ -322,7 +331,6 @@
         margin: 0 5px;
         border-radius: 5px;
         font-weight: 500;
-
         user-select: none;
         cursor: pointer;
     }
@@ -342,6 +350,29 @@
     }
 
     .numItem:active {
+        background: #d4d4d4;
+    }
+
+    .controls {
+        display: flex;
+        margin-top: 20px;
+        width: fit-content;
+    }
+
+    .control-item {
+        width: 80px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e5e4e9;
+        margin: 0 10px;
+        border-radius: 5px;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    .control-item:hover {
         background: #d4d4d4;
     }
 </style>

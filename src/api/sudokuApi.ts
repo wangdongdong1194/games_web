@@ -3,16 +3,19 @@ import { apiRequest } from "./request";
 export async function getSudokuById(data: { id: string }) {
     return apiRequest.post("/sudoku/generate", data);
 }
-export function getOneSudoku() {
-    return [
-          '2', '9', '', '8', '7', '3', '', '1', ''
-        , '4', '', '', '', '', '5', '9', '2', ''
-        , '', '1', '', '', '2', '4', '', '', ''
-        , '', '', '', '', '8', '9', '6', '', ''
-        , '', '', '4', '', '', '', '8', '3', ''
-        , '', '8', '2', '3', '1', '', '5', '', ''
-        , '', '', '9', '2', '3', '8', '', '', '7'
-        , '8', '', '', '', '4', '7', '', '', ''
-        , '3', '', '5', '', '9', '', '2', '8', '4'
-    ];
+export async function getOneSudoku() {
+    const result = await apiRequest.get("/api/sudoku/") as {
+        code: number;
+        message: string;
+        data: {
+            id: number;
+            puzzle: string;
+            solution: string;
+        }
+    };
+    console.log("API 返回的数独数据:", result);
+    if (result && result.code === 0 && result.data && result.data.puzzle && result.data.puzzle.length === 81) {
+        return result.data.puzzle.split("").map(cell => cell === '0' ? '' : cell);
+    }
+    return [];
 }
