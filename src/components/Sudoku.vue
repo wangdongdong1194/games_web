@@ -175,11 +175,21 @@
     updateRemaining();
 </script>
 <style scoped>
-        .readonly {
-            background: #f3f3f3 !important;
-            color: #888 !important;
-            font-weight: 100 !important;
-        }
+    .sudoku {
+        display: flex;
+        width: fit-content;
+        align-items: center;
+        flex-direction: column;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .readonly {
+        background: #f3f3f3 !important;
+        color: #888 !important;
+        font-weight: 100 !important;
+    }
+
     .marked {
         background: #abe6ee !important;
         /* 横竖宫高亮色，淡黄 */
