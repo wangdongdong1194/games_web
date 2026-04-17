@@ -11,8 +11,15 @@
         </div>
         <!-- 数字输入：点击棋盘上的格子选中，然后按键盘上的数字键（1-9）输入数字。 -->
         <div class="numItems">
-            <div class="numItem" v-for="item in numItems" :key="item.value" @click="handleNumItemClickEvent(item)">
-                <span class="numItemValue">{{ item.value }}</span>
+            <div class="numItem" v-for="item in numItems" :key="item.value"
+                @click="item.value === 'C' ? handleNumItemClickEvent(item) : (candidates.length && candidates.includes(item.value) ? handleNumItemClickEvent(item) : null)"
+                :style="item.value === 'C' ? '' : (candidates.length && !candidates.includes(item.value) ? 'background:#f3f3f3; color:#bbb; cursor:not-allowed;' : '')">
+                <span class="numItemValue"
+                    :style="item.value === 'C' ? '' : (candidates.length && candidates.includes(item.value) ? 'color:#1976d2;font-weight:bold;' : '')">
+                    {{ item.value }}
+                    <template
+                        v-if="item.value !== 'C' && candidates.length && candidates.includes(item.value)"></template>
+                </span>
                 <span class="numItemRemaining" v-if="item.remaining > 0">{{ item.remaining }}</span>
             </div>
         </div>
@@ -65,8 +72,49 @@
         { value: '7', remaining: 9 },
         { value: '8', remaining: 9 },
         { value: '9', remaining: 9 },
-        { value: '⬅️', remaining: 0 }
+        { value: 'C', remaining: 0 }
     ]);
+
+    // 当前选中格子的候选数字
+    const candidates = ref<string[]>([]);
+    const selectedIndex = ref<number | null>(null);
+
+    // 计算候选数字（排除自身填写的数字）
+    function calcCandidates(index: number): string[] {
+        const row = Math.floor(index / 9);
+        const col = index % 9;
+        const used = new Set<string>();
+        // 行
+        for (let i = 0; i < 9; i++) {
+            if (row * 9 + i === index) continue;
+            const v = sudokuItems.value[row * 9 + i].value;
+            if (v) used.add(v);
+        }
+        // 列
+        for (let i = 0; i < 9; i++) {
+            if (i * 9 + col === index) continue;
+            const v = sudokuItems.value[i * 9 + col].value;
+            if (v) used.add(v);
+        }
+        // 宫
+        const blockRow = Math.floor(row / 3) * 3;
+        const blockCol = Math.floor(col / 3) * 3;
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const idx = (blockRow + r) * 9 + (blockCol + c);
+                if (idx === index) continue;
+                const v = sudokuItems.value[idx].value;
+                if (v) used.add(v);
+            }
+        }
+        const result: string[] = [];
+        for (let n = 1; n <= 9; n++) {
+            if (!used.has(n.toString())) {
+                result.push(n.toString());
+            }
+        }
+        return result;
+    }
 
     // 统计剩余数量
     function updateRemaining() {
@@ -80,7 +128,7 @@
             }
         });
         numItems.value.forEach(item => {
-            if (item.value !== '⬅️') {
+            if (item.value !== 'C') {
                 item.remaining = 9 - used[item.value];
             }
         });
@@ -95,12 +143,26 @@
         });
         // 选中格子
         sudokuItems.value[index].selected = true;
+        selectedIndex.value = index;
 
         // 计算横、竖、宫
         const row = Math.floor(index / 9);
         const col = index % 9;
         const block = getBlockIndex(index);
 
+        // 如果当前格子有值，则高亮所有与当前值相同的节点
+        const curValue = sudokuItems.value[index].value;
+        if (curValue) {
+            sudokuItems.value.forEach((item, i) => {
+                if (item.value === curValue && !item.selected) {
+                    item.marked = true;
+                }
+            });
+            candidates.value = [];
+            return;
+        }
+
+        // 否则，正常高亮横竖宫
         sudokuItems.value.forEach((item, i) => {
             const r = Math.floor(i / 9);
             const c = i % 9;
@@ -109,6 +171,13 @@
                 item.marked = true;
             }
         });
+
+        // 计算候选数字（只对非readonly节点）
+        if (!sudokuItems.value[index].readonly) {
+            candidates.value = calcCandidates(index);
+        } else {
+            candidates.value = [];
+        }
     };
 
     // 给每个选中节点添加键盘输入数字事件
@@ -155,17 +224,26 @@
     const handleNumItemClickEvent = (item: ISudokuInput) => {
         const selectedItem = sudokuItems.value.find(item => item.selected);
         if (selectedItem && !selectedItem.readonly) {
-            if (item.value === '⬅️') {
+            if (item.value === 'C') {
                 selectedItem.value = '';
                 updateRemaining();
+                if (selectedIndex.value !== null) {
+                    selectItemEvent(selectedIndex.value);
+                }
                 console.log(`Cleared selected item value`);
-            } else {
+            } else if (candidates.value.length > 0) {
                 // 判断剩余次数
                 if (item.remaining <= 0) {
                     return;
                 }
+                if (!candidates.value.includes(item.value)) {
+                    return;
+                }
                 selectedItem.value = item.value;
                 updateRemaining();
+                if (selectedIndex.value !== null) {
+                    selectItemEvent(selectedIndex.value);
+                }
                 console.log(`Updated selected item value: ${selectedItem.value}`);
             }
         }
