@@ -8,7 +8,7 @@ if [ -z "$1" ]; then
 fi
 
 VERSION=$1
-IMAGE=wangzhidong/sudoku-web
+IMAGE=wangzhidong/games-web
 
 echo "==> 构建镜像: $IMAGE:$VERSION"
 docker build -t $IMAGE:$VERSION . || exit 1

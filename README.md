@@ -14,7 +14,7 @@ npm run dev
 ### 1. 构建镜像
 
 ```bash
-docker build -t sudoku-web .
+docker build -t game-web .
 ```
 
 ### 2. 运行容器（支持自定义 API 地址）
@@ -31,12 +31,12 @@ VITE_API_BASE_URL=https://your-api.com
 docker run -d \
   -p 8080:80 \
   -v ${PWSD}/.env:/app/.env \
-  --name sudoku-web sudoku-web
+  --name game-web game-web:tag版本
 
 docker run -d \
   -p 8083:80 \
   -v 根目录/.env:/app/.env \
-  --name sudoku-web dockerhub名称/sudoku-web    
+  --name game-web dockerhub名称/game-web:tag版本
 ```
 
 - 也可以直接在构建镜像前将 .env 放到项目根目录，镜像会自动读取。
@@ -44,8 +44,8 @@ docker run -d \
 ### 3. 上传镜像到仓库（以 Docker Hub 为例）
 
 ```bash
-docker tag sudoku-web your-dockerhub-username/sudoku-web:latest
-docker push your-dockerhub-username/sudoku-web:latest
+docker tag game-web your-dockerhub-username/game-web:latest
+docker push your-dockerhub-username/game-web:latest
 ```
 
 ## 运行时配置说明
@@ -91,3 +91,9 @@ METHOD: GET
     }
 }
 ```
+
+
+docker run -d \
+  -p 8083:80 \
+  -v /Users/wangzhidong/codes/games/game_web/.env:/app/.env \
+  --name game-web wangzhidong/game-web:1.0.0
