@@ -48,6 +48,36 @@ docker tag game-web your-dockerhub-username/game-web:latest
 docker push your-dockerhub-username/game-web:latest
 ```
 
+### 4. 导出镜像为 tar 包并分发
+
+如果需要将镜像导出为 tar 包，供其他服务器或环境导入使用，可执行以下命令：
+
+```bash
+docker save -o games-web.tar wangzhidong/games-web:latest
+```
+
+将生成的 `games-web.tar` 文件分发到目标服务器后，在目标服务器上执行：
+
+```bash
+docker load -i games-web.tar
+```
+
+即可导入镜像，然后正常使用 `docker run` 命令启动容器。
+
+### 5. 通过 scp 上传 tar 包到服务器
+
+将导出的镜像 tar 包上传到目标服务器，例如：
+
+```bash
+scp games-web.tar user@your-server-ip:/path/to/target/dir
+```
+
+- `user` 替换为服务器用户名
+- `your-server-ip` 替换为服务器 IP 地址
+- `/path/to/target/dir` 替换为服务器上的目标目录
+
+上传后可在服务器上执行 `docker load -i games-web.tar` 进行导入。
+
 ## 运行时配置说明
 
 - **entrypoint.sh**
@@ -91,3 +121,26 @@ METHOD: GET
     }
 }
 ```
+
+# 如何在Mac下生成Linux可用的Docker镜像包
+
+如果你的开发环境是Mac（尤其是Apple Silicon/ARM架构），而目标服务器是Linux（通常为x86_64/amd64架构），请按照以下步骤操作，确保生成的镜像包兼容Linux服务器：
+
+1. 使用 Docker Buildx 构建 amd64 架构镜像：
+```sh
+docker buildx build --platform linux/amd64 -t games-web:latest .
+```
+
+2. 保存镜像为tar包：
+```sh
+docker save -o games-web.tar games-web:latest
+```
+
+3. 将 games-web.tar 拷贝到Linux服务器。
+
+4. 在Linux服务器上导入镜像：
+```sh
+docker load -i games-web.tar
+```
+
+这样生成的包即可在大多数Linux服务器上使用。
