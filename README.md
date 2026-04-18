@@ -30,8 +30,13 @@ VITE_API_BASE_URL=https://your-api.com
 ```bash
 docker run -d \
   -p 8080:80 \
-  -v $(pwd)/.env:/app/.env \
+  -v ${PWSD}/.env:/app/.env \
   --name sudoku-web sudoku-web
+
+docker run -d \
+  -p 8083:80 \
+  -v 根目录/.env:/app/.env \
+  --name sudoku-web dockerhub名称/sudoku-web    
 ```
 
 - 也可以直接在构建镜像前将 .env 放到项目根目录，镜像会自动读取。
@@ -69,3 +74,20 @@ docker push your-dockerhub-username/sudoku-web:latest
 ---
 
 如需扩展更多游戏或自定义部署方式，欢迎随时联系维护者！
+
+
+## 扩展
+- 接口信息
+```
+URL: /api/sudoku/
+METHOD: GET
+返回: {
+    "code": 0,
+    "message": "success",
+    "data": {
+        "id": 3,
+        "puzzle": "81位字符串，组成0-9，0表示可填，1-9表示题",
+        "solution": "结构同puzzle"
+    }
+}
+```
