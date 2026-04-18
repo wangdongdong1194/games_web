@@ -1,10 +1,10 @@
 # 基于官方node镜像构建阶段
-FROM node:22.2.0-alpine AS builder
+FROM node:22.22.0-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-COPY .env ./
+RUN npm install
 COPY . ./
-RUN npm install && npm run build
+RUN npm run build
 
 # 生产环境nginx镜像
 FROM nginx:alpine
