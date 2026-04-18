@@ -91,9 +91,3 @@ METHOD: GET
     }
 }
 ```
-
-
-docker run -d \
-  -p 8083:80 \
-  -v /Users/wangzhidong/codes/games/game_web/.env:/app/.env \
-  --name game-web wangzhidong/game-web:1.0.0
