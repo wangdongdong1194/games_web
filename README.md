@@ -31,12 +31,12 @@ VITE_API_BASE_URL=https://your-api.com
 docker run -d \
   -p 8080:80 \
   -v ${PWSD}/.env:/app/.env \
-  --name game-web game-web:tag版本
+  --name games-web games-web:tag版本
 
 docker run -d \
   -p 8083:80 \
   -v 根目录/.env:/app/.env \
-  --name game-web dockerhub名称/game-web:tag版本
+  --name games-web dockerhub名称/games-web:tag版本
 ```
 
 - 也可以直接在构建镜像前将 .env 放到项目根目录，镜像会自动读取。
