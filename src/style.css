@@ -1,7 +1,7 @@
 /* 默认桌面端较大格子 */
 :root {
   --bgColor: #ffffff;
-  --maxWidth: 1200px;
+  --maxWidth: 100%;
 }
 * {
   padding: 0;
