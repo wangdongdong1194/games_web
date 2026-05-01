@@ -22,6 +22,7 @@ export interface IEliminateCell {
     fulldown: boolean;
 }
 export interface IEliminateClearResult {
+    maxRowNo: number;
     columnArray: number[];
     cellIndexArray: number[][];
 }
