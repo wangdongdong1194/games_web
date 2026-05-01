@@ -10,7 +10,11 @@
                 </router-link>
                 <router-link to="/eliminate" class="game-card">
                     <div class="game-title">消消乐</div>
-                    <div class="game-desc">3消</div>
+                    <div class="game-desc">3消-单</div>
+                </router-link>
+                <router-link to="/eliminate2" class="game-card">
+                    <div class="game-title">消消乐</div>
+                    <div class="game-desc">3消-多</div>
                 </router-link>
                 <div class="game-card coming-soon">
                     <div class="game-title">更多游戏</div>
